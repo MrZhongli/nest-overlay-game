@@ -1,0 +1,120 @@
+// ============================================================
+// WHO WANTS TO BE A MILLIONAIRE - OVERLAY API
+// Prisma Schema - Prisma v7
+// La conexión a la base de datos se configura en prisma.config.ts
+// ============================================================
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ─────────────────────────────────────────────
+// QUESTION MANAGEMENT
+// ─────────────────────────────────────────────
+
+/// Conjunto de preguntas para un stream específico
+model QuestionSet {
+  id        String   @id @default(uuid())
+  name      String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  questions Question[]
+  sessions  GameSession[]
+}
+
+/// Pregunta individual con nivel de dificultad 1-15 (WWTBAM style)
+model Question {
+  id        String   @id @default(uuid())
+  text      String
+  level     Int
+  category  String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  setId String
+  set   QuestionSet @relation(fields: [setId], references: [id], onDelete: Cascade)
+
+  answers Answer[]
+}
+
+/// Posible respuesta de una pregunta (1 correcta, 3 incorrectas)
+model Answer {
+  id        String  @id @default(uuid())
+  text      String
+  isCorrect Boolean @default(false)
+
+  questionId String
+  question   Question @relation(fields: [questionId], references: [id], onDelete: Cascade)
+}
+
+// ─────────────────────────────────────────────
+// GAME SESSION (partida activa)
+// ─────────────────────────────────────────────
+
+/// Partida de juego en vivo controlada por el streamer
+model GameSession {
+  id                String     @id @default(uuid())
+  status            GameStatus @default(WAITING)
+  currentLevel      Int        @default(1)
+  currentQuestionId String?
+  revealAnswer      Boolean    @default(false)
+  createdAt         DateTime   @default(now())
+  updatedAt         DateTime   @updatedAt
+
+  setId String
+  set   QuestionSet @relation(fields: [setId], references: [id])
+
+  lifelines LifelineUsage[]
+}
+
+// ─────────────────────────────────────────────
+// LIFELINES (comodines)
+// ─────────────────────────────────────────────
+
+model LifelineUsage {
+  id     String       @id @default(uuid())
+  type   LifelineType
+  used   Boolean      @default(false)
+  usedAt DateTime?
+
+  sessionId String
+  session   GameSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+}
+
+// ─────────────────────────────────────────────
+// OVERLAY STATE (estado persistente para OBS)
+// ─────────────────────────────────────────────
+
+/// Estado del overlay en OBS para recuperarse tras reconexión
+/// Solo existe un registro (id = "main")
+model OverlayState {
+  id                String   @id @default("main")
+  sessionId         String?
+  currentQuestionId String?
+  revealAnswer      Boolean  @default(false)
+  hiddenAnswerIds   Json     @default("[]")
+  updatedAt         DateTime @updatedAt
+}
+
+// ─────────────────────────────────────────────
+// ENUMS
+// ─────────────────────────────────────────────
+
+enum GameStatus {
+  WAITING
+  PLAYING
+  WON
+  LOST
+  FINISHED
+}
+
+enum LifelineType {
+  FIFTY_FIFTY
+  ASK_AUDIENCE
+  PHONE_FRIEND
+}

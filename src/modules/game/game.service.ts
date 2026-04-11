@@ -2,7 +2,6 @@ import {
   Injectable,
   NotFoundException,
   BadRequestException,
-  ConflictException,
   Logger,
 } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
@@ -43,15 +42,22 @@ export class GameService {
       throw new NotFoundException(`QuestionSet ${dto.setId} no encontrado`);
     }
 
-    // Una sola sesión activa a la vez
+    // Si hay una sesión activa, la cerramos automáticamente
     const activeSession = await this.prisma.gameSession.findFirst({
       where: { status: { in: [GameStatus.WAITING, GameStatus.PLAYING] } },
     });
 
     if (activeSession) {
-      throw new ConflictException(
-        `Ya existe una sesión activa: ${activeSession.id}. Finalizala antes de crear otra.`,
-      );
+      await this.prisma.gameSession.update({
+        where: { id: activeSession.id },
+        data: { status: GameStatus.FINISHED },
+      });
+      await this.prisma.overlayState.upsert({
+        where: { id: 'main' },
+        create: { id: 'main', sessionId: null, currentQuestionId: null, revealAnswer: false, hiddenAnswerIds: [] },
+        update: { sessionId: null, currentQuestionId: null, revealAnswer: false, hiddenAnswerIds: [] },
+      });
+      this.logger.log(`Auto-finalized previous session: ${activeSession.id}`);
     }
 
     // Crear sesión con los 3 comodines disponibles

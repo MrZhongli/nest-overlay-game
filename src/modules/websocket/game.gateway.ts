@@ -80,24 +80,25 @@ export class GameGateway
   // ─────────────────────────────────────────────
 
   emitShowQuestion(sessionId: string, payload: ShowQuestionEvent) {
-    this.server.to(`game:${sessionId}`).emit(GameEvent.SHOW_QUESTION, payload);
+    this.server.to(`game:${sessionId}`).to('overlay').emit(GameEvent.SHOW_QUESTION, payload);
   }
 
   emitHideAnswers(sessionId: string, payload: HideAnswersEvent) {
-    this.server.to(`game:${sessionId}`).emit(GameEvent.HIDE_ANSWERS, payload);
+    this.server.to(`game:${sessionId}`).to('overlay').emit(GameEvent.HIDE_ANSWERS, payload);
   }
 
   emitRevealCorrect(sessionId: string, payload: RevealCorrectEvent) {
-    this.server.to(`game:${sessionId}`).emit(GameEvent.REVEAL_CORRECT, payload);
+    this.server.to(`game:${sessionId}`).to('overlay').emit(GameEvent.REVEAL_CORRECT, payload);
   }
 
   emitGameFinished(sessionId: string, payload: GameFinishedEvent) {
-    this.server.to(`game:${sessionId}`).emit(GameEvent.GAME_FINISHED, payload);
+    this.server.to(`game:${sessionId}`).to('overlay').emit(GameEvent.GAME_FINISHED, payload);
   }
 
   emitGameStarted(sessionId: string) {
     this.server
       .to(`game:${sessionId}`)
+      .to('overlay')
       .emit(GameEvent.GAME_STARTED, { sessionId });
   }
 

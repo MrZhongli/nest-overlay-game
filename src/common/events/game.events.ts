@@ -53,6 +53,7 @@ export interface GameFinishedEvent {
   type: GameEvent.GAME_FINISHED;
   sessionId: string;
   finalLevel: number;
+  status: string;
 }
 
 export interface OverlayStateEvent {

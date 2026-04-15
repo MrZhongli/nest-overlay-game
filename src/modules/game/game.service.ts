@@ -128,10 +128,20 @@ export class GameService {
     const nextLevel = session.currentLevel;
 
     // Buscar pregunta aleatoria del nivel actual
-    const question = await this.questionsService.findByLevel(
-      session.setId,
-      nextLevel,
-    );
+    let question;
+    try {
+      question = await this.questionsService.findByLevel(
+        session.setId,
+        nextLevel,
+      );
+    } catch (err) {
+      if (err instanceof NotFoundException) {
+        // Si ya no hay preguntas para el siguiente nivel, asumimos que completó el juego existosamente (WON)
+        this.logger.log(`No more questions for level ${nextLevel} in session ${sessionId}. Player wins automatically.`);
+        return this.finishSession(sessionId, true);
+      }
+      throw err;
+    }
 
     // Actualizar sesión con la pregunta actual
     await this.prisma.gameSession.update({
@@ -276,6 +286,7 @@ export class GameService {
       type: GameEvent.GAME_FINISHED,
       sessionId,
       finalLevel: session.currentLevel,
+      status: newStatus,
     };
 
     this.gateway.emitGameFinished(sessionId, payload);

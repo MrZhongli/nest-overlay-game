@@ -9,8 +9,15 @@ import {
 } from '@nestjs/common';
 import { LifelinesService } from './lifelines.service';
 
+import { IsString, IsNotEmpty } from 'class-validator';
+
 class LifelineBodyDto {
+  @IsString()
+  @IsNotEmpty()
   sessionId: string;
+
+  @IsString()
+  @IsNotEmpty()
   questionId: string;
 }
 

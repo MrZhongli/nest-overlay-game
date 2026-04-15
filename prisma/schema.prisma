@@ -67,7 +67,7 @@ model GameSession {
   updatedAt         DateTime   @updatedAt
 
   setId String
-  set   QuestionSet @relation(fields: [setId], references: [id])
+  set   QuestionSet @relation(fields: [setId], references: [id], onDelete: Cascade)
 
   lifelines LifelineUsage[]
 }
